@@ -1,0 +1,20 @@
+prometheus:
+  prometheusSpec:
+    ## Namespaces to be selected for PrometheusRules discovery.
+    ## If nil, select own namespace. Namespaces to be selected for ServiceMonitor discovery.
+    ## See https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#namespaceselector for usage
+    ##
+    ruleNamespaceSelector: {}
+
+    ## PrometheusRules to be selected for target discovery.
+    ## If {}, select all PrometheusRules
+    ##
+    # ruleSelector: {}
+
+    ruleSelector:
+      matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - dms4-alert-rules
+          - kube-prometheus-stack

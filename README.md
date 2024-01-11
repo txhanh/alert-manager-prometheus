@@ -12,4 +12,19 @@ Steps:
     - Set: ruleSelector, value: dms4-alert-rules, kube-prometheus-stack
     - Config alertmanager to send alert via telegram
 4. Create a manifest file to define rules, then apply that file
-    - This is YAML file with kind: PrometheusRule
+    - This is YAML file with kind: PrometheusRule:
+        + Kubernetes Nodes and Pods Rules:
+            Node CPU / RAM
+            Pod CPU / RAM
+            Node down
+            Kubernetes Node Memory Pressure
+            Kubernetes Node Disk Pressure
+            Kubernetes Pod Not Healthy
+            Kubernetes Pod Crash Looping
+        + Kubernetes MariaDB rules:
+            Node down
+            Node restart
+            Too many connections
+        + Kubernetest MongoDB rules:
+            Node down
+            Too many connections
