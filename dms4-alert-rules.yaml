@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   labels:
-    app: dms4-alert-rules
+    app: dms4-alert-rules # this name must be same as value in ruleSelector (dms4-alert-rules)
   name: dms4-alert-rules
 spec:
   groups:
