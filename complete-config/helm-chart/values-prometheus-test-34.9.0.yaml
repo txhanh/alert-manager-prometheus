@@ -175,8 +175,8 @@ alertmanager:
       telegram_configs:
       - send_resolved: true
         api_url: https://api.telegram.org
-        bot_token: 6916024600:AAHeSF-W2jtr0Kn8E5XDUIz3RTgov_2DWFU
-        chat_id: -4036561983
+        bot_token: <telegram_bot_token>
+        chat_id: <group_chat_id>
         parse_mode: "HTML"
     
     templates:
