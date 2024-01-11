@@ -1,0 +1,140 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app: dms4-alert-rules # this name must be same as value in ruleSelector (dms4-alert-rules)
+  name: dms4-alert-rules
+spec:
+  groups:
+  - name: "Kubernetes Nodes and Pods Rules"
+    rules:
+      - alert: Kubernetes Node CPU utilization higher than 80%
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Kubernetes Node CPU utilization higher than 80% (node {{ $labels.instance }})
+          description: "Node {{ $labels.instance }} has high CPU condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      - alert: Kubernetes Node Memory utilization higher than 80%
+        expr: 100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100) > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kubernetes Node Memory utilization higher than 80% (node {{ $labels.instance }})
+          description: "Node {{ $labels.instance }} has high Memory condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      - alert: Pod CPU utilization higher than 80%
+        expr: (max by(pod, namespace, container) (rate(container_cpu_usage_seconds_total{container!=""}[3m])) / max by(pod, namespace, container) (kube_pod_container_resource_limits{resource="cpu"}) * 100) > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Pod {{$labels.pod}} in namespace {{$labels.namespace}} is using high CPU
+          description: Pod {{$labels.pod}} in namespace {{$labels.namespace}} is using more than 80% of the requested CPU resources.
+      
+      - alert: Pod RAM utilization higher than 80%
+        expr: (avg by (pod, namespace, container)(container_memory_working_set_bytes{container!=""})  / sum by(pod, namespace, container) (kube_pod_container_resource_limits{resource="memory"}) * 100) > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Pod {{$labels.pod}} in namespace {{$labels.namespace}} is using high RAM
+          description: Pod {{$labels.pod}} in namespace {{$labels.namespace}} is using more than 80% of the requested RAM resources.
+
+      - alert: Kubernetes Node is down
+        expr: 'kube_node_status_condition{condition="Ready",status="true"} == 0'
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kubernetes Node is not ready (node {{ $labels.instance }})
+          description: "Node {{ $labels.instance }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: Kubernetes Node Memory Pressure
+        expr: 'kube_node_status_condition{condition="MemoryPressure",status="true"} == 1'
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kubernetes memory pressure (node {{ $labels.instance }})
+          description: "Node {{ $labels.instance }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: Kubernetes Node Disk Pressure
+        expr: 'kube_node_status_condition{condition="DiskPressure",status="true"} == 1'
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kubernetes disk pressure (node {{ $labels.instance }})
+          description: "Node {{ $labels.instance }} has DiskPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: Kubernetes Pod Not Healthy
+        expr: 'sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0'
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kubernetes Pod not healthy ({{ $labels.namespace }}/{{ $labels.pod }})
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-running state for longer than 1 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: Kubernetes Pod Crash Looping
+        expr: 'increase(kube_pod_container_status_restarts_total[1m]) > 3'
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Kubernetes pod crash looping ({{ $labels.namespace }}/{{ $labels.pod }})
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+  
+  - name: "MariaDB Rules" #Tên Rule hiển thị trên mục Rule của Prometheus trên web Prometheus
+    rules:
+      - alert: MariaDB Down
+        expr: mysql_up == 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: MariaDB down (instance {{ $labels.instance }})
+          description: "MariaDB instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      - alert: MariaDB Restarted
+        expr: mysql_global_status_uptime < 30
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: MariaDB restarted (instance {{ $labels.instance }})
+          description: "MariaDB has just been restarted, less than one minute ago on {{ $labels.instance }}.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      - alert: MariaDB Too Many Connections (>80%)
+        expr: (max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: MariaDB too many connections (> 80%) (instance {{ $labels.instance }})
+          description: "More than 80% of MariaDB connections are in use on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  
+  - name: "MongoDB Rules" #Tên Rule hiển thị trên mục Rule của Prometheus trên web Prometheus
+    rules:
+      - alert: MongoDB Down
+        expr: mongodb_up == 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: MongoDB Down (instance {{ $labels.instance }})
+          description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      - alert: MongoDB Too Many Connections
+        expr: (avg by(instance) (rate(mongodb_ss_connections{conn_type="current"}[1m])) / avg by(instance) (sum (mongodb_ss_connections) by (instance)) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: MongoDB too many connections (instance {{ $labels.instance }})
+          description: "MongoDB too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
