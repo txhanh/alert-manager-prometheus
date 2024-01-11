@@ -1,5 +1,0 @@
-{
-    "yaml.schemas": {
-        "https://json.schemastore.org/kustomization.json": "file:///Users/txhanh/HanhKRPrepos/ViettelCloud/Prometheus-Monitoring/docs/alert-manager-prometheus/dms4-alert-rules.yaml"
-    }
-}
